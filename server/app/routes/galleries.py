@@ -1,5 +1,5 @@
 import os
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from ..database import db
 from ..config import STORAGE_BASE, MAX_LIMIT, GUEST_LIMIT
 from ..models import gallery_document, share_link_document
@@ -11,10 +11,8 @@ async def create_gallery(folder_name: str, token: str):
 
     gallery_path = os.path.join(STORAGE_BASE, folder_name)
 
-    # Create main folder
     os.makedirs(gallery_path, exist_ok=True)
 
-    # Create standard subfolders
     subfolders = [
         "Wedding Images",
         "Video",
@@ -39,3 +37,37 @@ async def create_gallery(folder_name: str, token: str):
     )
 
     return {"status": "gallery created successfully"}
+
+
+@router.post("/admin/create-share-link")
+async def create_share_link(
+    folder_name: str,
+    token: str,
+    role: str,
+    folder_scope: str = "all"
+):
+
+    if role not in ["read", "edit", "full"]:
+        raise HTTPException(status_code=400, detail="Invalid role")
+
+    if folder_scope not in ["all", "guest_uploads_only"]:
+        raise HTTPException(status_code=400, detail="Invalid folder scope")
+
+    existing_token = await db.share_links.find_one({"token": token})
+    if existing_token:
+        raise HTTPException(status_code=400, detail="Token already exists")
+
+    gallery = await db.galleries.find_one({"folder_name": folder_name})
+    if not gallery:
+        raise HTTPException(status_code=404, detail="Gallery not found")
+
+    await db.share_links.insert_one(
+        share_link_document(
+            token=token,
+            gallery_id=gallery["_id"],
+            role=role,
+            folder_scope=folder_scope
+        )
+    )
+
+    return {"status": "share link created"}
