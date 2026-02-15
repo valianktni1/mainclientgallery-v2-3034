@@ -1,5 +1,5 @@
 import os
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from ..database import db
 from ..config import STORAGE_BASE, MAX_LIMIT, GUEST_LIMIT
 from ..models import gallery_document, share_link_document
@@ -8,9 +8,22 @@ router = APIRouter()
 
 @router.post("/admin/create-gallery")
 async def create_gallery(folder_name: str, token: str):
+
     gallery_path = os.path.join(STORAGE_BASE, folder_name)
-    if not os.path.exists(gallery_path):
-        raise HTTPException(status_code=400, detail="Folder does not exist")
+
+    # Create main folder
+    os.makedirs(gallery_path, exist_ok=True)
+
+    # Create standard subfolders
+    subfolders = [
+        "Wedding Images",
+        "Video",
+        "Guest Uploads",
+        "Selfie Booth"
+    ]
+
+    for sub in subfolders:
+        os.makedirs(os.path.join(gallery_path, sub), exist_ok=True)
 
     gallery = await db.galleries.insert_one(
         gallery_document(folder_name, MAX_LIMIT, GUEST_LIMIT)
@@ -25,4 +38,4 @@ async def create_gallery(folder_name: str, token: str):
         )
     )
 
-    return {"status": "gallery created with default read link"}
+    return {"status": "gallery created successfully"}
