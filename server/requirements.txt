@@ -1,4 +1,7 @@
+
 fastapi
-uvicorn
+uvicorn[standard]
 motor
 python-multipart
+bcrypt
+python-jose[cryptography]
