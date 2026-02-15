@@ -15,5 +15,7 @@ def share_link_document(token: str, gallery_id, role: str, folder_scope: str, pa
         "role": role,
         "folder_scope": folder_scope,
         "password_hash": password_hash,
+        "failed_attempts": 0,
+        "locked_until": None,
         "created_at": datetime.utcnow()
     }
